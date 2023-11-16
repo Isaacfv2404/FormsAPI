@@ -35,7 +35,7 @@ public class FormDataController : ControllerBase
             // Obtener el nombre de la tabla de formData
             string tableName = "newTable" + formData["idForm"];
 
-            // Verificar si la tabla ya existe
+            // Verifica si la tabla ya existe
             if (!TableExists(tableName))
             {
                 // Si no existe, crea la tabla
@@ -59,6 +59,7 @@ public class FormDataController : ControllerBase
         }
     }
 
+    //valida la existencia de la tabla
     private bool TableExists(string tableName)
     {
         using (var connection = new SqlConnection(_context.Database.GetConnectionString()))
@@ -72,6 +73,7 @@ public class FormDataController : ControllerBase
         }
     }
 
+    //en caso que no extista, crea la nueva tabla
     private bool CreateTable(Dictionary<string, object> formData, string tableName)
     {
         try
@@ -112,6 +114,7 @@ public class FormDataController : ControllerBase
         }
     }
 
+    //recorre el formdata para insertar los datos
     private bool InsertData(Dictionary<string, object> formData, string tableName)
     {
         try
