@@ -31,39 +31,23 @@ public class FormDataController : ControllerBase
                 return BadRequest("No se proporcionaron datos para ejecutar el procedimiento almacenado.");
             }
 
-            // Crear una tabla en SQL Server basada en los datos recibidos
-            var createTableQuery = "CREATE OR ALTER TABLE newTable (";
-            var insertQuery = "INSERT INTO newTable (";
+            // Obtener el nombre de la tabla de formData
+            string tableName = "newTable";
 
-            foreach (var kvp in formData)
+            // Verificar si la tabla ya existe
+            if (!TableExists(tableName))
             {
-                createTableQuery += $"{kvp.Key} NVARCHAR(MAX),";
-                insertQuery += kvp.Key + ",";
+                // Si no existe, crea la tabla
+                if (!CreateTable(formData, tableName))
+                {
+                    return BadRequest("Error al crear la tabla.");
+                }
             }
 
-            createTableQuery = createTableQuery.TrimEnd(',') + ")";
-            insertQuery = insertQuery.TrimEnd(',') + ") VALUES (";
-
-            foreach (var kvp in formData)
+            // Insertar datos en la tabla
+            if (!InsertData(formData, tableName))
             {
-                insertQuery += $"'{kvp.Value}',"; // Aquí se asume que todos los datos son cadenas (strings)
-            }
-
-            insertQuery = insertQuery.TrimEnd(',') + ")";
-
-            using (var connection = new SqlConnection(_context.Database.GetConnectionString()))
-            {
-                await connection.OpenAsync();
-
-                using (var command = new SqlCommand(createTableQuery, connection))
-                {
-                    await command.ExecuteNonQueryAsync();
-                }
-
-                using (var command = new SqlCommand(insertQuery, connection))
-                {
-                    await command.ExecuteNonQueryAsync();
-                }
+                return BadRequest("Error al insertar datos en la tabla.");
             }
 
             return Ok("Procedimiento almacenado ejecutado con éxito y tabla creada en SQL Server.");
@@ -73,5 +57,88 @@ public class FormDataController : ControllerBase
             return StatusCode(500, $"Error: {ex.Message}");
         }
     }
+
+    private bool TableExists(string tableName)
+    {
+        using (var connection = new SqlConnection(_context.Database.GetConnectionString()))
+        {
+            connection.Open();
+
+            using (var command = new SqlCommand($"SELECT 1 FROM sys.tables WHERE name = '{tableName}'", connection))
+            {
+                return command.ExecuteScalar() != null;
+            }
+        }
+    }
+
+    private bool CreateTable(Dictionary<string, object> formData, string tableName)
+    {
+        try
+        {
+            var createTableQuery = $"CREATE TABLE {tableName} (";
+
+            foreach (var kvp in formData)
+            {
+                createTableQuery += $"{kvp.Key} NVARCHAR(MAX),";
+            }
+
+            createTableQuery = createTableQuery.TrimEnd(',') + ")";
+
+            using (var connection = new SqlConnection(_context.Database.GetConnectionString()))
+            {
+                connection.Open();
+
+                using (var command = new SqlCommand(createTableQuery, connection))
+                {
+                    command.ExecuteNonQuery();
+                }
+            }
+
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private bool InsertData(Dictionary<string, object> formData, string tableName)
+    {
+        try
+        {
+            var insertQuery = $"INSERT INTO {tableName} (";
+
+            foreach (var kvp in formData)
+            {
+                insertQuery += kvp.Key + ",";
+            }
+
+            insertQuery = insertQuery.TrimEnd(',') + ") VALUES (";
+
+            foreach (var kvp in formData)
+            {
+                insertQuery += $"'{kvp.Value}',";
+            }
+
+            insertQuery = insertQuery.TrimEnd(',') + ")";
+
+            using (var connection = new SqlConnection(_context.Database.GetConnectionString()))
+            {
+                connection.Open();
+
+                using (var command = new SqlCommand(insertQuery, connection))
+                {
+                    command.ExecuteNonQuery();
+                }
+            }
+
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
 
 }
