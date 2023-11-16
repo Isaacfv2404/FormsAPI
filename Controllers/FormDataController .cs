@@ -7,6 +7,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.Security.Principal;
 using System.Threading.Tasks;
 
 [ApiController]
@@ -32,7 +33,7 @@ public class FormDataController : ControllerBase
             }
 
             // Obtener el nombre de la tabla de formData
-            string tableName = "newTable";
+            string tableName = "newTable" + formData["idForm"];
 
             // Verificar si la tabla ya existe
             if (!TableExists(tableName))
@@ -79,10 +80,19 @@ public class FormDataController : ControllerBase
 
             foreach (var kvp in formData)
             {
-                createTableQuery += $"{kvp.Key} NVARCHAR(MAX),";
+                if(kvp.Key == "idForm")
+                {
+                    createTableQuery += $"{kvp.Key} int,";
+                }
+                else { 
+                    createTableQuery += $"{kvp.Key} NVARCHAR(MAX),";
+                }
             }
+            createTableQuery = createTableQuery + "FOREIGN KEY(idForm) REFERENCES form(id)";
+
 
             createTableQuery = createTableQuery.TrimEnd(',') + ")";
+            System.Console.WriteLine(createTableQuery);
 
             using (var connection = new SqlConnection(_context.Database.GetConnectionString()))
             {
@@ -139,6 +149,57 @@ public class FormDataController : ControllerBase
             return false;
         }
     }
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetFormData(int id)
+    {
+        try
+        {
+            // Obtener el nombre de la tabla de formData
+            string tableName = "newTable" + id;
+
+            // Verificar si la tabla existe
+            if (!TableExists(tableName))
+            {
+                return NotFound("La tabla no existe.");
+            }
+
+            // Consultar y devolver los datos de la tabla
+            var selectQuery = $"SELECT * FROM {tableName}";
+
+            using (var connection = new SqlConnection(_context.Database.GetConnectionString()))
+            {
+                connection.Open();
+
+                using (var command = new SqlCommand(selectQuery, connection))
+                {
+                    using (var reader = command.ExecuteReader())
+                    {
+                        var result = new List<Dictionary<string, object>>();
+
+                        while (reader.Read())
+                        {
+                            var row = new Dictionary<string, object>();
+
+                            for (int i = 0; i < reader.FieldCount; i++)
+                            {
+                                row.Add(reader.GetName(i), reader[i]);
+                            }
+
+                            result.Add(row);
+                        }
+
+                        return Ok(result);
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Error: {ex.Message}");
+        }
+    }
+
 
 
 }
