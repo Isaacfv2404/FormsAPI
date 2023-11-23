@@ -67,18 +67,34 @@ namespace FormsAPI.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<Component>> GetComponent(int id)
         {
-            if (_context.Component == null)
+            var components = await _context.Component
+           .Include(c => c.typeComponent)
+           .Where(c => c.formId == id)
+           .ToListAsync();
+
+            if (components == null || components.Count == 0)
             {
                 return NotFound();
             }
-            var component = await _context.Component.FindAsync(id);
 
-            if (component == null)
+            // Crea una lista para almacenar los fragmentos HTML de componentes
+            var componentHtmlFragments = new List<string>();
+
+            foreach (var component in components)
             {
-                return NotFound();
+                var typeComponent = component.typeComponent != null ? component.typeComponent.nameComponent : "Sin typeComponent";
+
+                // Genera el fragmento HTML para cada componente y escapa los valores para seguridad
+                var htmlFragment = $"<label for=\"{HtmlEncode(component.nameDescription)}\">\"{HtmlEncode(component.nameDescription)}\":</label>\r\n";
+                htmlFragment += $"<input type=\"{HtmlEncode(typeComponent)}\" id=\"{HtmlEncode(component.componentNameId)}\" name=\"{HtmlEncode(component.nameDescription)}\" key=\"{HtmlEncode(component.componentNameId)}\">";
+
+                componentHtmlFragments.Add(htmlFragment);
             }
 
-            return component;
+            // Convierte la lista de fragmentos HTML en una cadena completa
+            var html = string.Join("", componentHtmlFragments);
+
+            return Content(html, "text/html");
         }
 
         // PUT: api/Components/5
