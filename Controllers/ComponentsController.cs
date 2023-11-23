@@ -77,24 +77,59 @@ namespace FormsAPI.Controllers
                 return NotFound();
             }
 
-            // Crea una lista para almacenar los fragmentos HTML de componentes
             var componentHtmlFragments = new List<string>();
 
             foreach (var component in components)
             {
                 var typeComponent = component.typeComponent != null ? component.typeComponent.nameComponent : "Sin typeComponent";
+                var htmlFragment = "";
 
-                // Genera el fragmento HTML para cada componente y escapa los valores para seguridad
-                var htmlFragment = $"<label for=\"{HtmlEncode(component.nameDescription)}\">\"{HtmlEncode(component.nameDescription)}\":</label>\r\n";
-                htmlFragment += $"<input type=\"{HtmlEncode(typeComponent)}\" id=\"{HtmlEncode(component.componentNameId)}\" name=\"{HtmlEncode(component.nameDescription)}\" key=\"{HtmlEncode(component.componentNameId)}\">";
+                //el typeComponentId es 7 (label)
+                if (component.typeComponentId == 7)
+                {
+                    htmlFragment += $"<label for=\"{HtmlEncode(component.nameDescription)}\">\"{HtmlEncode(component.nameDescription)}\":</label>\r\n";
+                }
+
+                switch (component.typeComponentId)
+                {
+                    case 1: // text
+                        htmlFragment += $"<input type=\"text\" id=\"{HtmlEncode(component.componentNameId)}\" name=\"{HtmlEncode(component.nameDescription)}\" key=\"{HtmlEncode(component.componentNameId)}\">";
+                        break;
+                    case 2: // button
+                        htmlFragment += $"<button type=\"button\" id=\"{HtmlEncode(component.componentNameId)}\" name=\"{HtmlEncode(component.nameDescription)}\" key=\"{HtmlEncode(component.componentNameId)}\">{HtmlEncode(component.nameDescription)}</button>";
+                        break;
+                    case 3: // radio
+                        htmlFragment += $"<input type=\"radio\" id=\"{HtmlEncode(component.componentNameId)}\" name=\"{HtmlEncode(component.nameDescription)}\" key=\"{HtmlEncode(component.componentNameId)}\">";
+                        break;
+                    case 4: // checkbox
+                        htmlFragment += $"<input type=\"checkbox\" id=\"{HtmlEncode(component.componentNameId)}\" name=\"{HtmlEncode(component.nameDescription)}\" key=\"{HtmlEncode(component.componentNameId)}\">";
+                        break;
+                    case 5: // select
+                        htmlFragment += $"<select id=\"{HtmlEncode(component.componentNameId)}\" name=\"{HtmlEncode(component.nameDescription)}\" key=\"{HtmlEncode(component.componentNameId)}\">";
+
+                        // Agregar opciones al select (puedes modificar esta lógica según tus necesidades)
+                        htmlFragment += "<option value=\"opcion1\">Opción 1</option>";
+                        htmlFragment += "<option value=\"opcion2\">Opción 2</option>";
+                        htmlFragment += "</select>";
+                        break;
+                    case 6: // textarea
+                        htmlFragment += $"<textarea id=\"{HtmlEncode(component.componentNameId)}\" name=\"{HtmlEncode(component.nameDescription)}\" key=\"{HtmlEncode(component.componentNameId)}\"></textarea>";
+                        break;
+                    case 7: // label
+                            // No es necesario agregar nada adicional para el caso de label, ya que ya se incluye en el fragmento HTML.
+                        break;
+                    default:
+                        htmlFragment += $"Tipo de componente no manejado para typeComponentId {component.typeComponentId}";
+                        break;
+                }
 
                 componentHtmlFragments.Add(htmlFragment);
             }
 
-            // Convierte la lista de fragmentos HTML en una cadena completa
             var html = string.Join("", componentHtmlFragments);
 
             return Content(html, "text/html");
+
         }
 
         // PUT: api/Components/5
