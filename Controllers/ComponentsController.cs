@@ -132,9 +132,24 @@ namespace FormsAPI.Controllers
 
         }
 
-        // PUT: api/Components/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
+        [HttpGet("formComponents/{id}")]
+        public async Task<ActionResult<List<Component>>> GetComponenHTMLt(int id)
+        {
+            var components = await _context.Component
+           .Include(c => c.typeComponent)
+           .Where(c => c.formId == id)
+           .ToListAsync();
+
+            if (components == null || components.Count == 0)
+            {
+                return NotFound();
+            }
+            return components;
+        }
+
+            // PUT: api/Components/5
+            // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+            [HttpPut("{id}")]
         public async Task<IActionResult> PutComponent(int id, Component component)
         {
             if (id != component.id)
